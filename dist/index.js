@@ -32,6 +32,11 @@ const authorTypeDefs = apollo_server_1.gql `
     type Author {
         _id: ID!
         name: String!
+        tags: [AuthorTag!]!
+    }
+    type AuthorTag {
+        name: String!
+        kind: String!
     }
 `;
 const bookResolvers = {
@@ -61,8 +66,17 @@ const authorResolvers = {
             selectionSet: `{ name }`,
             resolve: (obj) => obj.name.toUpperCase(),
         },
-        // overwritten resolver
+        // overwritten resolvers
         name: (obj) => obj.name.toUpperCase(),
+        // manually correcting alias
+        // name: (obj: Author, _: unknown, __: unknown, info: GraphQLResolveInfo) => {
+        //     const key = getResponseKeyFromInfo(info);
+        //     return obj[key].toUpperCase();
+        // },
+        tags: (obj, args, context, info) => {
+            const tags = graphql_tools_1.defaultMergedResolver(obj, args, context, info);
+            return tags.map(t => (Object.assign({ extraProp: true }, t)));
+        },
     },
 };
 const bookSchema = graphql_tools_1.makeExecutableSchema({

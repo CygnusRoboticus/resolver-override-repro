@@ -6,6 +6,7 @@ import {
     ExecutionResult,
     introspectSchema,
     getResponseKeyFromInfo,
+    defaultMergedResolver,
 } from "graphql-tools";
 import { print, GraphQLResolveInfo } from "graphql";
 import fetch from "node-fetch";
@@ -13,6 +14,12 @@ import fetch from "node-fetch";
 interface Author {
     _id: string;
     name: string;
+    tags: AuthorTag[];
+}
+
+interface AuthorTag {
+    name: string;
+    kind: string;
 }
 
 interface Book {
@@ -37,6 +44,11 @@ const authorTypeDefs = gql`
     type Author {
         _id: ID!
         name: String!
+        tags: [AuthorTag!]!
+    }
+    type AuthorTag {
+        name: String!
+        kind: String!
     }
 `;
 
@@ -70,7 +82,7 @@ const authorResolvers = {
             resolve: (obj: Author) => obj.name.toUpperCase(),
         },
 
-        // overwritten resolver
+        // overwritten resolvers
         name: (obj: Author) => obj.name.toUpperCase(),
 
         // manually correcting alias
@@ -78,6 +90,18 @@ const authorResolvers = {
         //     const key = getResponseKeyFromInfo(info);
         //     return obj[key].toUpperCase();
         // },
+
+        tags: (obj: Author, args: {}, context: {}, info: GraphQLResolveInfo) => {
+            const tags: AuthorTag[] = defaultMergedResolver(obj, args, context, info);
+
+            return tags.map(t => ({
+                extraProp: true,
+                ...t,
+            }));
+        },
+    },
+    AuthorTag: {
+        name: (obj: AuthorTag) => obj.name.toUpperCase(),
     },
 };
 
